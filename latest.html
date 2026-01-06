@@ -1,23 +1,44 @@
+<!-- trigger rebuild -->
 <!doctype html>
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
   <title>Latest Screenshot</title>
   <style>
     body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#111;}
     img{max-width:100vw;max-height:100vh;object-fit:contain;}
+    .hint{position:fixed;left:12px;bottom:12px;color:#aaa;font:12px/1.4 system-ui;}
   </style>
 </head>
 <body>
   <img id="img" alt="latest" />
+  <div class="hint" id="hint">loading...</div>
+
   <script>
-    // 每次打開都加時間戳，強制拿到最新圖（避免快取）
     const img = document.getElementById('img');
-    img.src = 'images/latest.png?ts=' + Date.now();
+    const hint = document.getElementById('hint');
+
+    async function loadLatest() {
+      try {
+        // 讀取最新檔名（避免快取）
+        const res = await fetch('images/latest.txt?ts=' + Date.now(), { cache: 'no-store' });
+        const name = (await res.text()).trim();
+
+        if (!name) throw new Error('latest.txt is empty');
+
+        const url = 'images/' + encodeURIComponent(name) + '?ts=' + Date.now();
+        img.src = url;
+        hint.textContent = '✅ ' + name;
+
+        img.onerror = () => hint.textContent = '❌ image load failed: ' + name;
+      } catch (e) {
+        hint.textContent = '❌ failed to load latest.txt';
+        console.error(e);
+      }
+    }
+
+    loadLatest();
   </script>
 </body>
 </html>
